@@ -1,12 +1,15 @@
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <arpa/inet.h>
+#include <time.h>
 
-#define BUFSIZE 1024
-
-int main(int argc, char *argv[]) {
+int main(int argc, char **argv)
+{
     if (argc != 2) {
         fprintf(stderr, "Usage: %s <Port>\n", argv[0]);
         exit(1);
@@ -15,12 +18,12 @@ int main(int argc, char *argv[]) {
     int listenfd, connfd;
     struct sockaddr_in servaddr, cliaddr;
     socklen_t clilen;
-    char buffer[BUFSIZE];
+    char buffer[1024];
     int port = atoi(argv[1]);
 
     listenfd = socket(AF_INET, SOCK_STREAM, 0);
     if (listenfd < 0) {
-        perror("Socket creation failed");
+        perror("Socket Error");
         exit(1);
     }
 
@@ -29,40 +32,38 @@ int main(int argc, char *argv[]) {
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servaddr.sin_port = htons(port);
 
-    if (bind(listenfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
-        perror("Bind failed");
+    if (bind(listenfd, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0) {
+        perror("Bind Error");
         exit(1);
     }
 
     if (listen(listenfd, 5) < 0) {
-        perror("Listen failed");
+        perror("Listen Error");
         exit(1);
     }
 
-    printf("Echo server running on port %d...\n", port);
+    printf("Echo server running on port %d (PID = %d)...\n", port, getpid());
 
-    while (1) {
+    for (;;) {
         clilen = sizeof(cliaddr);
         connfd = accept(listenfd, (struct sockaddr *)&cliaddr, &clilen);
+
         if (connfd < 0) {
-            perror("Accept failed");
+            perror("Accept Error");
             continue;
         }
 
-        printf("Client connected: %s:%d\n",
+        printf("Client connected from %s:%d\n",
                inet_ntoa(cliaddr.sin_addr), ntohs(cliaddr.sin_port));
 
         int n;
-        while ((n = read(connfd, buffer, BUFSIZE - 1)) > 0) {
+        while ((n = read(connfd, buffer, sizeof(buffer)-1)) > 0) {
             buffer[n] = '\0';
-            printf("Received: %s", buffer);
-            write(connfd, buffer, n);
+            printf("Received from client: %s", buffer);
+            write(connfd, buffer, n);  // kirim balik (echo)
         }
 
         close(connfd);
         printf("Client disconnected.\n");
     }
-
-    close(listenfd);
-    return 0;
 }

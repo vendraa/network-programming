@@ -1,25 +1,27 @@
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <arpa/inet.h>
 
-#define BUFSIZE 1024
-
-int main(int argc, char *argv[]) {
+int main(int argc, char **argv)
+{
     if (argc != 3) {
-        fprintf(stderr, "Usage: %s <ServerIP> <Port>\n", argv[0]);
+        fprintf(stderr, "Usage: %s <Server IP> <Port>\n", argv[0]);
         exit(1);
     }
 
-    int sockfd;
+    int sockfd, n;
+    char sendline[1024], recvline[1024];
     struct sockaddr_in servaddr;
-    char sendline[BUFSIZE], recvline[BUFSIZE];
     int port = atoi(argv[2]);
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
-        perror("Socket creation failed");
+        perror("Socket Error");
         exit(1);
     }
 
@@ -32,20 +34,24 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    if (connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
-        perror("Connect failed");
+    if (connect(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0) {
+        perror("Connect Error");
         exit(1);
     }
 
-    printf("Connected to echo server %s:%d\n", argv[1], port);
-    printf("Ketik pesan kamu kemudian tekan Enter (Ctrl+D untuk keluar):\n");
+    // dapatkan port lokal yang dipakai client
+    struct sockaddr_in localaddr;
+    socklen_t addrlen = sizeof(localaddr);
+    getsockname(sockfd, (struct sockaddr *)&localaddr, &addrlen);
 
-    while (fgets(sendline, BUFSIZE, stdin) != NULL) {
+    printf("Client started (PID = %d), using local port %d\n", getpid(), ntohs(localaddr.sin_port));
+    printf("Connected to server %s:%d\n", argv[1], port);
+
+    while (fgets(sendline, sizeof(sendline), stdin) != NULL) {
         write(sockfd, sendline, strlen(sendline));
-        int n = read(sockfd, recvline, BUFSIZE - 1);
-        if (n > 0) {
+        if ((n = read(sockfd, recvline, sizeof(recvline)-1)) > 0) {
             recvline[n] = '\0';
-            printf("Echo: %s", recvline);
+            printf("Echo from server: %s", recvline);
         }
     }
 
