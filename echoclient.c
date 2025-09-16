@@ -39,14 +39,13 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    // dapatkan port lokal yang dipakai client
     struct sockaddr_in localaddr;
     socklen_t addrlen = sizeof(localaddr);
     getsockname(sockfd, (struct sockaddr *)&localaddr, &addrlen);
 
-    printf("Client started (PID = %d), using local port %d\n", getpid(), ntohs(localaddr.sin_port));
+    printf("Client started (Process ID = %d), using local port %d\n", getpid(), ntohs(localaddr.sin_port));
     printf("Connected to server %s:%d\n", argv[1], port);
-    printf("Ketik pesan kemudian tekan Enter (Ctrl+D untuk keluar):\n");
+    printf("Ketik pesan kemudian tekan Enter:\n");
 
     while (fgets(sendline, sizeof(sendline), stdin) != NULL) {
         write(sockfd, sendline, strlen(sendline));

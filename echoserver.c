@@ -42,7 +42,7 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    printf("Echo server running on port %d (PID = %d)...\n", port, getpid());
+    printf("Echo server running on port %d (Process ID = %d)...\n", port, getpid());
 
     for (;;) {
         clilen = sizeof(cliaddr);
@@ -60,7 +60,7 @@ int main(int argc, char **argv)
         while ((n = read(connfd, buffer, sizeof(buffer)-1)) > 0) {
             buffer[n] = '\0';
             printf("Received from client: %s", buffer);
-            write(connfd, buffer, n);  // kirim balik (echo)
+            write(connfd, buffer, n);
         }
 
         close(connfd);
